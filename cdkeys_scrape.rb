@@ -40,13 +40,12 @@ def display_header(interest_price)
   newline(2)
   line_breaker(2)
   puts "\s\sINTEREST PRICE RANGE OF #{interest_price}"
-  line_breaker
+  line_breaker(2)
 end
 
 def display_results(name, price, available, is_good_price)
   newline
-  line_breaker
-  puts "Game: #{name} Price: #{price}"
+  puts "- Game: #{name} Price: #{price}"
   puts "Available: #{available}"
   newline
   puts "Price is #{is_good_price ? "" : "NOT"} below marked interest price."
