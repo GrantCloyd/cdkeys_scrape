@@ -1,19 +1,21 @@
+# frozen_string_literal: true
+
 require 'nokogiri'
 require 'open-uri'
 require 'pry'
 
 class CDKeysScraper
-  PRIMARY_URL = "https://www.cdkeys.com".freeze
+  PRIMARY_URL = 'https://www.cdkeys.com'
   LINK_IDENTIFIERS = {
-    "30" => ["god-of-war-ragnarok-pc-steam-na"],
-    "25" => [
-      "horizon-forbidden-west-complete-edition-pc-steam",
-      "clair-obscur-expedition-33-pc-steam",
-      "warhammer-40-000-space-marine-2-pc-steam",
-      "the-hundred-line-last-defense-academy-pc-steam"
+    '30' => ['god-of-war-ragnarok-pc-steam-na'],
+    '25' => [
+      'horizon-forbidden-west-complete-edition-pc-steam',
+      'clair-obscur-expedition-33-pc-steam',
+      'warhammer-40-000-space-marine-2-pc-steam',
+      'the-hundred-line-last-defense-academy-pc-steam'
     ],
-    "20" => [
-        "outriders-complete-edition-pc-steam"
+    '20' => [
+        'outriders-complete-edition-pc-steam'
     ]
   }.freeze
 
@@ -25,35 +27,33 @@ class CDKeysScraper
         ids.each do |id|
           page = Nokogiri::HTML(URI.open("#{PRIMARY_URL}/#{id}"))
                                   # Out of Stock ||  In Stock
-          availability_matcher = /\w+\s+\w+\s+Stock|\w+\s+Stock/                                     
-          availability = page.css("#product-details").first.children.text.match(availability_matcher )[0]
-        
-          
-          name = page.css(".product-title").first&.text&.strip
-          next out_of_stock_message(name) if availability == "Out of Stock"
-          
-          price = page.css(".final-price.inline-block").first&.text&.strip
-          at_or_below_interest_price = (price.gsub("$", "").to_f) <= interest_price.to_f
-          
-          next display_not_at_rate(name, price) if !at_or_below_interest_price
+          availability_matcher = /\w+\s+\w+\s+Stock|\w+\s+Stock/
+          availability = page.css('#product-details').first.children.text.match(availability_matcher)[0]
+
+          name = page.css('.product-title').first&.text&.strip
+          next out_of_stock_message(name) if availability == 'Out of Stock'
+
+          price = page.css('.final-price.inline-block').first&.text&.strip
+          at_or_below_interest_price = price.gsub('$', '').to_f <= interest_price.to_f
+
+          next display_not_at_rate(name, price) unless at_or_below_interest_price
 
           # note, region is behind knockout js library restriction
           # so can't be scraped from page directly
-          display_results(name, price, availability, at_or_below_interest_price)
+          display_success(name, price)
         end
       end
     end
 
     private
 
-    
     def display_header(interest_price)
       newline(2)
       line_breaker_block(2) do
         puts "\s\sINTEREST PRICE RANGE OF #{interest_price}"
       end
     end
-    
+
     def out_of_stock_message(name)
       newline_block do
         puts "- #{name} is not in stock"
@@ -61,16 +61,16 @@ class CDKeysScraper
     end
 
     def display_not_at_rate(name, price)
-      newline_block do 
+      newline_block do
         puts "- #{name} is available but at #{price}"
       end
     end
-    
-    def display_results(name, price, available, is_good_price)
+
+    def display_success(name, price)
       newline_block do
-        puts ""
+        puts '🎉' * 30
         puts "- Game: #{name} Price: #{price}"
-        puts "Price is above marked interest price!"
+        puts 'Price is above marked interest price!'
       end
     end
 
@@ -87,7 +87,7 @@ class CDKeysScraper
     end
 
     def line_breaker(times_to_perform = 1)
-      times_to_perform.times { puts "*" * 30 }
+      times_to_perform.times { puts '*' * 30 }
     end
 
     def newline(times_to_perform = 1)
