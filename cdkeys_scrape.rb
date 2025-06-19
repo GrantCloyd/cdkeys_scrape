@@ -25,8 +25,8 @@ class CDKeysScraper
         ids.each do |id|
           page = Nokogiri::HTML(URI.open("#{PRIMARY_URL}/#{id}"))
         
-          name = page.css(".item.product").first&.text
-          price = page.css(".price").first&.text
+          name = page.css(".product-title").first&.text&.strip
+          price = page.css(".final-price.inline-block").first&.text&.strip
           at_or_below_interest_price = (price.gsub("$", "").to_f) <= interest_price.to_f
           available = page.css(".product-usps-item.attribute.stock.available").first&.text
           
