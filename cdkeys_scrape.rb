@@ -23,11 +23,7 @@ class CDKeysScraper
       LINK_IDENTIFIERS.each do |interest_price, url_ids|
         display_price_header(interest_price)
 
-        url_ids.each do |url_id|
-          game_information = GameInformation.new(url_id, interest_price)
-
-          game_information.display_price_and_stock_information
-        end
+        url_ids.each { |url_id| GameInformation.new(url_id, interest_price).display_price_and_stock_information }
       end
     end
 
@@ -36,7 +32,7 @@ class CDKeysScraper
     def display_price_header(interest_price)
       puts "\n"
       line_breaker_block(2) do
-        puts "\s\sINTEREST PRICE RANGE OF #{interest_price}"
+        puts ("\s" * 15) + "INTEREST PRICE RANGE OF #{interest_price}"
       end
     end
 
@@ -78,7 +74,7 @@ class GameInformation
     /\w+\s+\w+\s+Stock|\w+\s+Stock/
   end
 
-  def game_availability = @page.css('#product-details').first.children.text.match(availability_matcher)[0]
+  def game_availability = @page.css('#product-details').first&.children&.text&.match(availability_matcher)&.[](0)
 
   def game_out_of_stock? = game_availability == 'Out of Stock'
 
@@ -90,17 +86,11 @@ class GameInformation
 
   def game_at_or_below_interest_price? = game_price.gsub('$', '').to_f <= @interest_price.to_f
 
-  def out_of_stock_message
-    display_message('❌', "#{game_name} is not in stock")
-  end
+  def out_of_stock_message = display_message('❌', "#{game_name} is not in stock")
 
-  def display_not_at_rate_message
-    display_message('💰', "#{game_name} is available but at #{game_price}")
-  end
+  def display_not_at_rate_message = display_message('💰', "#{game_name} is available but at #{game_price}")
 
-  def display_success_message
-    display_message('🎉', "#{game_name} is now #{game_price}!")
-  end
+  def display_success_message = display_message('🎉', "#{game_name} is now #{game_price}!")
 
   def display_message(emoji, message)
     newline_block do
@@ -116,14 +106,10 @@ class GameInformation
     puts emoji * 30
   end
 
-  def newline_block(times_to_perform = 1)
-    newline(times_to_perform)
+  def newline_block
+    puts "\n"
     yield
-    newline(times_to_perform)
-  end
-
-  def newline(times_to_perform = 1)
-    times_to_perform.times { puts "\n" }
+    puts "\n"
   end
 end
 
