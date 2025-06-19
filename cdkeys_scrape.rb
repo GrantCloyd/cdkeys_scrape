@@ -5,7 +5,6 @@ require 'open-uri'
 require 'pry'
 
 class CDKeysScraper
-  PRIMARY_URL = 'https://www.cdkeys.com'
   LINK_IDENTIFIERS = {
     '30' => ['god-of-war-ragnarok-pc-steam-na'],
     '25' => [
@@ -21,56 +20,23 @@ class CDKeysScraper
 
   class << self
     def execute
-      LINK_IDENTIFIERS.each do |interest_price, ids|
-        display_header(interest_price)
+      LINK_IDENTIFIERS.each do |interest_price, url_ids|
+        display_price_header(interest_price)
 
-        ids.each do |id|
-          page = Nokogiri::HTML(URI.open("#{PRIMARY_URL}/#{id}"))
-                                  # Out of Stock ||  In Stock
-          availability_matcher = /\w+\s+\w+\s+Stock|\w+\s+Stock/
-          availability = page.css('#product-details').first.children.text.match(availability_matcher)[0]
+        url_ids.each do |url_id|
+          game_information = GameInformation.new(url_id, interest_price)
 
-          name = page.css('.product-title').first&.text&.strip
-          next out_of_stock_message(name) if availability == 'Out of Stock'
-
-          price = page.css('.final-price.inline-block').first&.text&.strip
-          at_or_below_interest_price = price.gsub('$', '').to_f <= interest_price.to_f
-
-          next display_not_at_rate(name, price) unless at_or_below_interest_price
-
-          # note, region is behind knockout js library restriction
-          # so can't be scraped from page directly
-          display_success(name, price)
+          game_information.display_price_and_stock_information
         end
       end
     end
 
     private
 
-    def display_header(interest_price)
-      newline(2)
+    def display_price_header(interest_price)
+      puts "\n"
       line_breaker_block(2) do
         puts "\s\sINTEREST PRICE RANGE OF #{interest_price}"
-      end
-    end
-
-    def out_of_stock_message(name)
-      newline_block do
-        puts "- #{name} is not in stock"
-      end
-    end
-
-    def display_not_at_rate(name, price)
-      newline_block do
-        puts "- #{name} is available but at #{price}"
-      end
-    end
-
-    def display_success(name, price)
-      newline_block do
-        puts '🎉' * 30
-        puts "- Game: #{name} Price: #{price}"
-        puts 'Price is above marked interest price!'
       end
     end
 
@@ -80,19 +46,84 @@ class CDKeysScraper
       line_breaker(times_to_perform)
     end
 
-    def newline_block(times_to_perform = 1)
-      newline(times_to_perform)
-      yield
-      newline(times_to_perform)
-    end
-
     def line_breaker(times_to_perform = 1)
-      times_to_perform.times { puts '*' * 30 }
+      times_to_perform.times { puts '*' * 60 }
     end
+  end
+end
 
-    def newline(times_to_perform = 1)
-      times_to_perform.times { puts "\n" }
+class GameInformation
+  PRIMARY_URL = 'https://www.cdkeys.com'
+
+  def initialize(url_id, interest_price)
+    @page = parse_page(url_id)
+    @interest_price = interest_price
+  end
+
+  def display_price_and_stock_information
+    return out_of_stock_message if game_out_of_stock?
+    return display_not_at_rate_message unless game_at_or_below_interest_price?
+
+    display_success_message
+  end
+
+  private
+
+  def parse_page(url_id)
+    Nokogiri::HTML(URI.parse("#{PRIMARY_URL}/#{url_id}").open)
+  end
+
+  def availability_matcher
+    #   Out of Stock  ||  In Stock
+    /\w+\s+\w+\s+Stock|\w+\s+Stock/
+  end
+
+  def game_availability = @page.css('#product-details').first.children.text.match(availability_matcher)[0]
+
+  def game_out_of_stock? = game_availability == 'Out of Stock'
+
+  def game_name = @page.css('.product-title').first&.text&.strip
+
+  def game_price
+    @game_price ||= @page.css('.final-price.inline-block').first&.text&.strip
+  end
+
+  def game_at_or_below_interest_price? = game_price.gsub('$', '').to_f <= @interest_price.to_f
+
+  def out_of_stock_message
+    display_message('❌', "#{game_name} is not in stock")
+  end
+
+  def display_not_at_rate_message
+    display_message('💰', "#{game_name} is available but at #{game_price}")
+  end
+
+  def display_success_message
+    display_message('🎉', "#{game_name} is now #{game_price}!")
+  end
+
+  def display_message(emoji, message)
+    newline_block do
+      emoji_block(emoji) do
+        puts message
+      end
     end
+  end
+
+  def emoji_block(emoji)
+    puts emoji * 30
+    yield
+    puts emoji * 30
+  end
+
+  def newline_block(times_to_perform = 1)
+    newline(times_to_perform)
+    yield
+    newline(times_to_perform)
+  end
+
+  def newline(times_to_perform = 1)
+    times_to_perform.times { puts "\n" }
   end
 end
 
