@@ -2,6 +2,7 @@
 
 require 'nokogiri'
 require 'open-uri'
+require 'date'
 require 'pry'
 
 class CDKeysScraper
@@ -58,9 +59,8 @@ class GameInformation
 
   def display_price_and_stock_information
     return out_of_stock_message if game_out_of_stock?
-    return display_not_at_rate_message unless game_at_or_below_interest_price?
 
-    display_success_message
+    game_at_or_below_interest_price? ? display_success_message : display_not_at_rate_message
   end
 
   private
@@ -84,13 +84,45 @@ class GameInformation
     @game_price ||= @page.css('.final-price.inline-block').first&.text&.strip
   end
 
-  def game_at_or_below_interest_price? = game_price.gsub('$', '').to_f <= @interest_price.to_f
+  def discount_coupon_amount
+    cap_amount = 2.75
+    ten_percecent_discount_amount = game_price_to_float * 0.1
 
-  def out_of_stock_message = display_message('❌', "#{game_name} is not in stock")
+    (ten_percecent_discount_amount < cap_amount ? game_price_to_float - ten_percecent_discount_amount : game_price_to_float - cap_amount).round(2)
+  end
 
-  def display_not_at_rate_message = display_message('💰', "#{game_name} is available but at #{game_price}")
+  def game_price_to_float
+    @game_price_to_float ||= game_price.gsub('$', '').to_f
+  end
 
-  def display_success_message = display_message('🎉', "#{game_name} is now #{game_price}!")
+  def game_price_with_discount
+    @game_price_with_discount ||= if has_discount?
+                                    discount_coupon_amount
+                                  else
+                                    game_price
+                                  end
+  end
+
+  def has_discount?
+    return @has_discount if defined?(@has_discount)
+
+    coupon_end_date = DateTime.new(2025, 12, 1)
+    @has_discount = coupon_end_date > DateTime.now
+  end
+
+  def with_discount_statement
+    "\swith discount applied" if has_discount?
+  end
+
+  def game_at_or_below_interest_price? = game_price_with_discount <= @interest_price.to_f
+
+  def out_of_stock_message = display_message('❌', "#{game_name} is not in stock.")
+
+  def display_not_at_rate_message = display_message('💰',
+                                                    "#{game_name} is available but at #{game_price_with_discount}#{with_discount_statement}.")
+
+  def display_success_message = display_message('🎉',
+                                                "#{game_name} is now #{game_price_with_discount}#{with_discount_statement}!")
 
   def display_message(emoji, message)
     newline_block do
