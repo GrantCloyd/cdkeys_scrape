@@ -7,15 +7,18 @@ require 'pry'
 
 class CDKeysScraper
   LINK_IDENTIFIERS = {
-    '30' => ['god-of-war-ragnarok-pc-steam-na'],
-    '25' => [
-      'horizon-forbidden-west-complete-edition-pc-steam',
-      'clair-obscur-expedition-33-pc-steam',
-      'warhammer-40-000-space-marine-2-pc-steam',
-      'the-hundred-line-last-defense-academy-pc-steam'
+    '30' => %w[
+      god-of-war-ragnarok-pc-steam-na
+      the-legend-of-heroes-trails-through-daybreak-pc-steam
     ],
-    '20' => [
-        'outriders-complete-edition-pc-steam'
+    '25' => %w[
+      horizon-forbidden-west-complete-edition-pc-steam
+      clair-obscur-expedition-33-pc-steam
+      warhammer-40-000-space-marine-2-pc-steam
+      the-hundred-line-last-defense-academy-pc-steam
+    ],
+    '20' => %w[
+        outriders-complete-edition-pc-steam
     ]
   }.freeze
 
@@ -88,7 +91,11 @@ class GameInformation
     cap_amount = 2.75
     ten_percecent_discount_amount = game_price_to_float * 0.1
 
-    (ten_percecent_discount_amount < cap_amount ? game_price_to_float - ten_percecent_discount_amount : game_price_to_float - cap_amount).round(2)
+    if ten_percecent_discount_amount < cap_amount
+      game_price_to_float - ten_percecent_discount_amount
+    else
+      game_price_to_float - cap_amount
+    end.round(2)
   end
 
   def game_price_to_float
@@ -96,33 +103,36 @@ class GameInformation
   end
 
   def game_price_with_discount
-    @game_price_with_discount ||= if has_discount?
+    @game_price_with_discount ||= if coupon_discount?
                                     discount_coupon_amount
                                   else
                                     game_price
                                   end
   end
 
-  def has_discount?
-    return @has_discount if defined?(@has_discount)
+  def coupon_discount?
+    return @coupon_discount if defined?(@coupon_discount)
 
     coupon_end_date = DateTime.new(2025, 12, 1)
-    @has_discount = coupon_end_date > DateTime.now
+
+    @coupon_discount ||= coupon_end_date > DateTime.now
   end
 
   def with_discount_statement
-    "\swith discount applied" if has_discount?
+    "\swith discount applied" if coupon_discount?
   end
 
   def game_at_or_below_interest_price? = game_price_with_discount <= @interest_price.to_f
 
   def out_of_stock_message = display_message('❌', "#{game_name} is not in stock.")
 
-  def display_not_at_rate_message = display_message('💰',
-                                                    "#{game_name} is available but at #{game_price_with_discount}#{with_discount_statement}.")
+  def display_not_at_rate_message
+     display_message('💰', "#{game_name} is available but at #{game_price_with_discount}#{with_discount_statement}.")
+  end
 
-  def display_success_message = display_message('🎉',
-                                                "#{game_name} is now #{game_price_with_discount}#{with_discount_statement}!")
+  def display_success_message
+    display_message('🎉', "#{game_name} is now #{game_price_with_discount}#{with_discount_statement}!")
+  end
 
   def display_message(emoji, message)
     newline_block do
