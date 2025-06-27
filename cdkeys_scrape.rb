@@ -53,7 +53,7 @@ class CDKeysScraper
 end
 
 class GameInformation
-  PRIMARY_URL = 'https://www.cdkeys.com'
+  PRIMARY_URL = 'https://www.cdkeys.com/'
 
   def initialize(url_id, interest_price)
     @page = parse_page(url_id)
@@ -69,15 +69,15 @@ class GameInformation
   private
 
   def parse_page(url_id)
-    Nokogiri::HTML(URI.parse("#{PRIMARY_URL}/#{url_id}").open)
+    Nokogiri::HTML(URI.parse("#{PRIMARY_URL}#{url_id}").open)
   end
 
   def availability_matcher
     #   Out of Stock  ||  In Stock
-    /\w+\s+\w+\s+Stock|\w+\s+Stock/
+    /[\w+\s]+Stock/
   end
 
-  def game_availability = @page.css('#product-details').first&.children&.text&.match(availability_matcher)&.[](0)
+  def game_availability = @page.css('#product-details').first&.children&.text&.match(availability_matcher)&.[](0)&.strip
 
   def game_out_of_stock? = game_availability == 'Out of Stock'
 
